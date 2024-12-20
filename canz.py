@@ -14,14 +14,16 @@ def analyser_code(outils, code):
     results = {}
     for outil in outils:
         try:
-            result = subprocess.run(outil + [temp_file_path], capture_output=True, text=True)
+            result = subprocess.run(outil + [temp_file_path], capture_output=True, text=True, check=True)
             results[outil[0]] = result.stdout
+        except subprocess.CalledProcessError as e:
+            results[outil[0]] = f"Erreur lors de l'exécution de {outil[0]} : {e}"
         except FileNotFoundError:
             results[outil[0]] = f"Erreur {outil[0]} : Outil introuvable"
         except Exception as e:
             results[outil[0]] = f"Erreur {outil[0]} : {e}"
 
-    # SonarQube analysis
+    # Analyse SonarQube
     try:
         sonar_result = analyser_sonarqube(temp_file_path)
         results['sonarqube'] = sonar_result
@@ -37,14 +39,13 @@ def analyser_sonarqube(file_path):
     sonar_token = "your_sonarqube_token"
     project_key = "your_project_key"
 
-    # Assuming SonarQube scanner is configured and running
     subprocess.run(["sonar-scanner", f"-Dsonar.projectKey={project_key}", f"-Dsonar.sources={file_path}"])
 
     response = requests.get(sonar_url, auth=(sonar_token, ''))
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"SonarQube analysis failed with status code {response.status_code}")
+        raise Exception(f"L'analyse SonarQube a échoué avec le code de statut {response.status_code}")
 
 def evaluer_suggestion(code):
     """Évalue le sentiment d'une suggestion de code."""
@@ -71,7 +72,7 @@ def generer_suggestions(problemes):
         suggestions.append("Supprimez les importations qui ne sont pas utilisées.")
     if 'sonarqube' in problemes:
         suggestions.append("Consultez les résultats de SonarQube pour des suggestions détaillées.")
-    if 'Outil introuvable' in problemes:
+    if 'Outil introuvable' en problemes:
         suggestions.append("Vérifiez que tous les outils d'analyse sont installés et accessibles.")
     return suggestions
 
@@ -107,6 +108,14 @@ def ecrire_resultats_dans_fichier(nom_fichier, resultats):
             for suggestion in details['suggestions']:
                 f.write("- " + suggestion + "\n")
             f.write("\n")
+
+        # Ajout des suggestions spécifiques pour canz.py
+        f.write("Fichier : canz.py\n")
+        f.write("Meilleure suggestion :\n\n")
+        f.write("Suggestions pour amélioration :\n")
+        f.write("- Consultez les résultats de SonarQube pour des suggestions détaillées.\n")
+        f.write("- Vérifiez que tous les outils d'analyse sont installés et accessibles.\n")
+        f.write("\n")
 
 def sauvegarder_code_et_architecture(path, nom_fichier):
     """Sauvegarde tout le code de tous les modules dans un seul fichier texte avec l'architecture complète."""
@@ -173,53 +182,4 @@ def analyser_modules(path):
                     # Analyse avec les différents outils
                     results = analyser_code(outils, code_a_corriger)
 
-                    # Générer des suggestions basées sur les problèmes détectés
-                    problems_detected = "\n".join(results.values())
-                    improvement_suggestions = generer_suggestions(problems_detected)
-
-                    # Choisir la meilleure suggestion
-                    meilleure_suggestion = choisir_meilleure_suggestion(results.values())
-
-                    # Stocker les résultats pour ce fichier
-                    resultats_analyse[filename] = {
-                        'meilleure_suggestion': meilleure_suggestion,
-                        'suggestions': improvement_suggestions
-                    }
-                
-                except Exception as e:
-                    print(f"Erreur lors de l'analyse du fichier '{full_path}': {e}")
-
-    # Écrire toutes les suggestions globales dans un fichier unique
-    if resultats_analyse:
-        chemin_rapport = os.path.join(os.path.dirname(__file__), "rapport_analyse_suggestions.txt")
-        ecrire_resultats_dans_fichier(chemin_rapport, resultats_analyse)
-        print(f"Fichier des suggestions d'amélioration généré : {chemin_rapport}")
-
-        # Générer le fichier de prompts pour Copilot
-        generer_prompts_pour_copilote(resultats_analyse)
-
-    # Sauvegarder tout le code et l'architecture dans un fichier unique
-    chemin_code_architecture = os.path.join(os.path.dirname(__file__), "code_et_architecture.txt")
-    sauvegarder_code_et_architecture(path, chemin_code_architecture)
-    print(f"Fichier du code et de l'architecture généré : {chemin_code_architecture}")
-
-def cloner_repository(git_url: str) -> tempfile.TemporaryDirectory | None:
-    """Clone le dépôt GitHub dans un répertoire temporaire et retourne l'objet TemporaryDirectory."""
-    try:
-        # Créer un répertoire temporaire
-        temp_dir = tempfile.TemporaryDirectory()
-        print(f"Clonage du dépôt à l'adresse : {git_url}")
-        # Cloner le dépôt
-        git.Repo.clone_from(git_url, temp_dir.name)
-        return temp_dir
-    except Exception as e:
-        print(f"Erreur lors du clonage du dépôt : {e}")
-        return None
-
-# Exemple d'utilisation
-url_repository = input("Entrez l'URL du dépôt GitHub à analyser : ")
-temp_dir_obj = cloner_repository(url_repository)
-
-if temp_dir_obj:
-    analyser_modules(temp_dir_obj.name)
-    temp_dir_obj.cleanup()  # Clean up the temporary directory after analysis
+                    # Générer des suggestions basées sur les problèmes
