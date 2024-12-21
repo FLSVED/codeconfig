@@ -76,9 +76,9 @@ def generer_suggestions(results):
             suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
         if "coverage" in outil:
             suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "radon" in outil:
-            suggestions.append("Utilisez radon pour analyser la complexité du code.")
-    return list(set(suggestions))  # Remove duplicates
+        if "xenon" in outil:
+            suggestions.append("Utilisez xenon pour analyser la complexité du code.")
+    return sorted(list(set(suggestions)))  # Remove duplicates and sort
 
 # Function to apply corrections to the code
 def appliquer_corrections(code, results):
@@ -124,7 +124,7 @@ def main():
                     file_path = os.path.join(root, filename)
                     with open(file_path, 'r', encoding='utf-8') as file:
                         code = file.read()
-                    outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["radon"]]
+                    outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
                     results = analyser_code(outils, file_path)
                     suggestions = generer_suggestions(results)
                     corrected_code = appliquer_corrections(code, results)
@@ -145,7 +145,7 @@ def main():
                 logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
                 sys.exit(1)
             code = response.text
-            outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["radon"]]
+            outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
                 temp_file.write(code)
                 temp_file_path = temp_file.name
