@@ -15,7 +15,6 @@ resultats_analyse = {}
 
 # Function to request access to local files
 def demander_acces_aux_fichiers():
-    """Request access to local files from the user."""
     try:
         path = input("Veuillez entrer le chemin du répertoire à analyser : ")
         if not os.path.exists(path):
@@ -27,7 +26,6 @@ def demander_acces_aux_fichiers():
 
 # Function to check if a tool is installed
 def verifier_outil(outil):
-    """Check if a tool is installed."""
     try:
         subprocess.run([outil, '--version'], capture_output=True, text=True, check=True)
         return True
@@ -36,7 +34,6 @@ def verifier_outil(outil):
 
 # Function to analyze code with various tools
 def analyser_code(outils, file_path):
-    """Analyze the code using a list of tools."""
     results = {}
     for outil in outils:
         if verifier_outil(outil[0]):
@@ -51,7 +48,6 @@ def analyser_code(outils, file_path):
 
 # Function to check if a URL is valid
 def is_valid_url(url):
-    """Check if a URL is valid."""
     try:
         response = requests.head(url)
         return response.status_code == 200
@@ -60,7 +56,6 @@ def is_valid_url(url):
 
 # Function to generate suggestions based on analysis results
 def generer_suggestions(results):
-    """Generate suggestions based on the analysis results."""
     suggestions = []
     for outil, result in results.items():
         if "flake8" in outil:
@@ -87,7 +82,6 @@ def generer_suggestions(results):
 
 # Function to apply corrections to the code
 def appliquer_corrections(code, results):
-    """Apply corrections to the code based on the analysis results."""
     corrected_code = code
     for outil, result in results.items():
         if "flake8" in outil:
@@ -109,7 +103,6 @@ def appliquer_corrections(code, results):
 
 # Function to write results to a file
 def ecrire_resultats_dans_fichier(filepath, results, suggestions):
-    """Write analysis results and suggestions to a file."""
     try:
         with open(filepath, 'w', encoding='utf-8') as file:
             for outil, result in results.items():
@@ -121,53 +114,58 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
         logging.error(f"Erreur lors de l'écriture des résultats dans le fichier {filepath} : {e}")
         raise
 
+def analyser_fichier_local(path):
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            if filename.endswith('.py'):
+                file_path = os.path.join(root, filename)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    code = file.read()
+                outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
+                results = analyser_code(outils, file_path)
+                suggestions = generer_suggestions(results)
+                corrected_code = appliquer_corrections(code, results)
+                print(f"Résultats pour {file_path} : {results}")
+                print(f"Suggestions : {suggestions}")
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(corrected_code)
+                ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
+
+def analyser_fichier_url(url):
+    if not is_valid_url(url):
+        logging.error(f"URL invalide : {url}")
+        sys.exit(1)
+    response = requests.get(url)
+    if response.status_code != 200:
+        logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
+        sys.exit(1)
+    code = response.text
+    outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
+        temp_file.write(code)
+        temp_file_path = temp_file.name
+    try:
+        results = analyser_code(outils, temp_file_path)
+        suggestions = generer_suggestions(results)
+        corrected_code = appliquer_corrections(code, results)
+        print(f"Résultats pour {url} : {results}")
+        print(f"Suggestions : {suggestions}")
+        with open(temp_file_path, 'w', encoding='utf-8') as file:
+            file.write(corrected_code)
+        ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
+    finally:
+        os.remove(temp_file_path)
+
 def main():
-    """Main function to execute the code analysis."""
     choix = input("Voulez-vous analyser les fichiers depuis un répertoire local ? (oui/non) : ").strip().lower()
     if choix == 'oui':
         path = demander_acces_aux_fichiers()
-        for root, dirs, files in os.walk(path):
-            for filename in files:
-                if filename.endswith('.py'):
-                    file_path = os.path.join(root, filename)
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        code = file.read()
-                    outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
-                    results = analyser_code(outils, file_path)
-                    suggestions = generer_suggestions(results)
-                    corrected_code = appliquer_corrections(code, results)
-                    print(f"Résultats pour {file_path} : {results}")
-                    print(f"Suggestions : {suggestions}")
-                    with open(file_path, 'w', encoding='utf-8') as file:
-                        file.write(corrected_code)
-                    ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
+        analyser_fichier_local(path)
     elif choix == 'non':
         choix = input("Voulez-vous analyser les fichiers depuis une URL ? (oui/non) : ").strip().lower()
         if choix == 'oui':
             url = input("Veuillez entrer l'URL du fichier à analyser : ")
-            if not is_valid_url(url):
-                logging.error(f"URL invalide : {url}")
-                sys.exit(1)
-            response = requests.get(url)
-            if response.status_code != 200:
-                logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
-                sys.exit(1)
-            code = response.text
-            outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]]
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
-                temp_file.write(code)
-                temp_file_path = temp_file.name
-            try:
-                results = analyser_code(outils, temp_file_path)
-                suggestions = generer_suggestions(results)
-                corrected_code = appliquer_corrections(code, results)
-                print(f"Résultats pour {url} : {results}")
-                print(f"Suggestions : {suggestions}")
-                with open(temp_file_path, 'w', encoding='utf-8') as file:
-                    file.write(corrected_code)
-                ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
-            finally:
-                os.remove(temp_file_path)
+            analyser_fichier_url(url)
         else:
             logging.info("Aucune analyse effectuée.")
             sys.exit(0)
