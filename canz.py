@@ -1,22 +1,40 @@
+"""
+Module pour analyser le code source avec divers outils.
+"""
+
+import logging
 import os
 import subprocess
-import tempfile
-import requests
-import logging
 import sys
+import tempfile
+
+import requests
 
 # Constants
 TOOLS = [
-    ["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["xenon"]
+    ["flake8"],
+    ["pylint"],
+    ["textblob"],
+    ["bandit"],
+    ["mypy"],
+    ["black"],
+    ["isort"],
+    ["pydocstyle"],
+    ["coverage"],
+    ["xenon"],
 ]
 RESULTS_FILE = "resultats_analyse.txt"
 
 # Initialize logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def demander_acces_aux_fichiers():
     """
     Demande à l'utilisateur le chemin du répertoire à analyser.
+
     Returns:
         str: Le chemin du répertoire.
     """
@@ -26,17 +44,20 @@ def demander_acces_aux_fichiers():
             raise FileNotFoundError(f"Le chemin spécifié n'existe pas : {path}")
         return path
     except FileNotFoundError as e:
-        logging.error(f"Erreur lors de la demande d'accès aux fichiers : {e}")
+        logging.error("Erreur lors de la demande d'accès aux fichiers : %s", e)
         sys.exit(1)
     except Exception as e:
-        logging.error(f"Erreur inattendue : {e}")
+        logging.error("Erreur inattendue : %s", e)
         sys.exit(1)
+
 
 def verifier_outil(outil):
     """
     Vérifie si un outil est installé.
+
     Args:
         outil (str): Le nom de l'outil à vérifier.
+
     Returns:
         bool: True si l'outil est installé, False sinon.
     """
@@ -46,12 +67,15 @@ def verifier_outil(outil):
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
+
 def analyser_code(outils, file_path):
     """
     Analyse le code avec divers outils.
+
     Args:
         outils (list): Liste des outils à utiliser pour l'analyse.
         file_path (str): Chemin du fichier à analyser.
+
     Returns:
         dict: Résultats de l'analyse pour chaque outil.
     """
@@ -67,26 +91,32 @@ def analyser_code(outils, file_path):
             results[outil[0]] = f"{outil[0]} n'est pas installé ou accessible."
     return results
 
+
 def is_valid_url(url):
     """
     Vérifie si une URL est valide.
+
     Args:
         url (str): L'URL à vérifier.
+
     Returns:
         bool: True si l'URL est valide, False sinon.
     """
     try:
-        response = requests.head(url)
+        response = requests.head(url, timeout=10)
         return response.status_code == 200
     except requests.RequestException as e:
-        logging.error(f"Erreur lors de la vérification de l'URL : {e}")
+        logging.error("Erreur lors de la vérification de l'URL : %s", e)
         return False
+
 
 def generer_suggestions(results):
     """
     Génère des suggestions basées sur les résultats de l'analyse.
+
     Args:
         results (dict): Résultats de l'analyse pour chaque outil.
+
     Returns:
         list: Liste des suggestions de correction.
     """
@@ -114,12 +144,15 @@ def generer_suggestions(results):
             suggestions.append("Utilisez xenon pour analyser la complexité du code.")
     return sorted(list(set(suggestions)))  # Remove duplicates and sort
 
+
 def appliquer_corrections(code, results):
     """
     Applique des corrections au code basé sur les résultats de l'analyse.
+
     Args:
         code (str): Le code source à corriger.
         results (dict): Résultats de l'analyse pour chaque outil.
+
     Returns:
         str: Le code corrigé.
     """
@@ -142,9 +175,11 @@ def appliquer_corrections(code, results):
             pass
     return corrected_code
 
+
 def ecrire_resultats_dans_fichier(filepath, results, suggestions):
     """
     Écrit les résultats de l'analyse et les suggestions dans un fichier.
+
     Args:
         filepath (str): Chemin du fichier où écrire les résultats.
         results (dict): Résultats de l'analyse pour chaque outil.
@@ -158,12 +193,14 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
             for suggestion in suggestions:
                 file.write(f"- {suggestion}\n")
     except Exception as e:
-        logging.error(f"Erreur lors de l'écriture des résultats dans le fichier {filepath} : {e}")
+        logging.error("Erreur lors de l'écriture des résultats dans le fichier %s : %s", filepath, e)
         raise
+
 
 def analyser_fichier_local(path):
     """
     Analyse les fichiers locaux dans le répertoire spécifié.
+
     Args:
         path (str): Chemin du répertoire à analyser.
     """
@@ -183,18 +220,20 @@ def analyser_fichier_local(path):
                         file.write(corrected_code)
                 ecrire_resultats_dans_fichier(RESULTS_FILE, results, suggestions)
 
+
 def analyser_fichier_url(url):
     """
     Analyse un fichier à partir d'une URL.
+
     Args:
         url (str): L'URL du fichier à analyser.
     """
     if not is_valid_url(url):
-        logging.error(f"URL invalide : {url}")
+        logging.error("URL invalide : %s", url)
         sys.exit(1)
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     if response.status_code != 200:
-        logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
+        logging.error("Erreur lors du téléchargement du fichier : %s", response.status_code)
         sys.exit(1)
     code = response.text
     with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
@@ -212,6 +251,7 @@ def analyser_fichier_url(url):
         ecrire_resultats_dans_fichier(RESULTS_FILE, results, suggestions)
     finally:
         os.remove(temp_file_path)
+
 
 def main():
     """
@@ -232,6 +272,7 @@ def main():
     else:
         logging.error("Choix invalide. Veuillez répondre par 'oui' ou 'non'.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
