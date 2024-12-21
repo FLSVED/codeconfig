@@ -23,7 +23,6 @@ TOOLS = [
     ["prospector"],
     ["trufflehog"],
 ]
-RESULTS_FILE = "resultats_analyse.txt"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -31,7 +30,7 @@ logging.basicConfig(
 
 def demander_acces_aux_fichiers():
     try:
-        path = input("Veuillez entrer le chemin du répertoire à analyser : ")
+        path = input("Veuillez entrer le chemin du répertoire à analyser : ").strip()
         if not os.path.exists(path):
             raise FileNotFoundError(f"Le chemin spécifié n'existe pas : {path}")
         return path
@@ -113,40 +112,49 @@ def generer_suggestions(results):
             suggestions.append("Utilisez TruffleHog pour détecter les secrets dans le code.")
     return sorted(list(set(suggestions)))
 
+def handle_syntax_errors(results):
+    for outil, result in results.items():
+        if "SyntaxError" in result or "invalid syntax" in result:
+            return True
+    return False
+
 def appliquer_corrections(code, results):
+    if handle_syntax_errors(results):
+        logging.error("Le code contient des erreurs de syntaxe. Veuillez corriger les erreurs de syntaxe avant de continuer.")
+        return code
     corrected_code = code
     for outil, result in results.items():
         if "flake8" in outil:
             pass
-        if "pylint" in outil:
+        elif "pylint" in outil:
             pass
-        if "bandit" in outil:
+        elif "bandit" in outil:
             pass
-        if "mypy" in outil:
+        elif "mypy" in outil:
             pass
-        if "black" in outil:
+        elif "black" in outil:
             pass
-        if "isort" in outil:
+        elif "isort" in outil:
             pass
-        if "pydocstyle" in outil:
+        elif "pydocstyle" in outil:
             pass
-        if "coverage" in outil:
+        elif "coverage" in outil:
             pass
-        if "xenon" in outil:
+        elif "xenon" in outil:
             pass
-        if "vulture" in outil:
+        elif "vulture" in outil:
             pass
-        if "pyflakes" in outil:
+        elif "pyflakes" in outil:
             pass
-        if "pyright" in outil:
+        elif "pyright" in outil:
             pass
-        if "pyre" in outil:
+        elif "pyre" in outil:
             pass
-        if "safety" in outil:
+        elif "safety" in outil:
             pass
-        if "prospector" in outil:
+        elif "prospector" in outil:
             pass
-        if "trufflehog" in outil:
+        elif "trufflehog" in outil:
             pass
     return corrected_code
 
@@ -160,6 +168,14 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
                 file.write(f"- {suggestion}\n")
     except Exception as e:
         logging.error("Erreur lors de l'écriture des résultats dans le fichier %s : %s", filepath, e)
+        raise
+
+def ecrire_code_dans_fichier(filepath, code):
+    try:
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(code)
+    except Exception as e:
+        logging.error("Erreur lors de l'écriture du code dans le fichier %s : %s", filepath, e)
         raise
 
 def analyser_fichier_local(path):
@@ -177,15 +193,20 @@ def analyser_fichier_local(path):
                 if corrected_code != code:
                     with open(file_path, 'w', encoding='utf-8') as file:
                         file.write(corrected_code)
-                ecrire_resultats_dans_fichier(RESULTS_FILE, results, suggestions)
+                for outil, result in results.items():
+                    if result:
+                        ecrire_resultats_dans_fichier(f"{outil}_resultats.txt", {outil: result}, suggestions)
+                ecrire_code_dans_fichier("code_complet.txt", code)
 
 def analyser_fichier_url(url):
     if not is_valid_url(url):
         logging.error("URL invalide : %s", url)
         sys.exit(1)
-    response = requests.get(url, timeout=10)
-    if response.status_code != 200:
-        logging.error("Erreur lors du téléchargement du fichier : %s", response.status_code)
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logging.error("Erreur lors du téléchargement du fichier : %s", e)
         sys.exit(1)
     code = response.text
     with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
@@ -200,7 +221,10 @@ def analyser_fichier_url(url):
         if corrected_code != code:
             with open(temp_file_path, 'w', encoding='utf-8') as file:
                 file.write(corrected_code)
-        ecrire_resultats_dans_fichier(RESULTS_FILE, results, suggestions)
+        for outil, result in results.items():
+            if result:
+                ecrire_resultats_dans_fichier(f"{outil}_resultats.txt", {outil: result}, suggestions)
+        ecrire_code_dans_fichier("code_complet.txt", code)
     finally:
         os.remove(temp_file_path)
 
@@ -212,7 +236,7 @@ def main():
     elif choix == 'non':
         choix = input("Voulez-vous analyser les fichiers depuis une URL ? (oui/non) : ").strip().lower()
         if choix == 'oui':
-            url = input("Veuillez entrer l'URL du fichier à analyser : ")
+            url = input("Veuillez entrer l'URL du fichier à analyser : ").strip()
             analyser_fichier_url(url)
         else:
             logging.info("Aucune analyse effectuée.")
