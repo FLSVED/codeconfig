@@ -1,12 +1,28 @@
 import os
+import subprocess
+import tempfile
+import requests
+from textblob import TextBlob
+from urllib.parse import urlparse
 import logging
 import sys
-import requests
-import tempfile
-import subprocess
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Initialize resultats_analyse as an empty dictionary
+resultats_analyse = {}
+
+# Function to request access to local files
+def demander_acces_aux_fichiers():
+    try:
+        path = input("Veuillez entrer le chemin du répertoire à analyser : ")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Le chemin spécifié n'existe pas : {path}")
+        return path
+    except Exception as e:
+        logging.error(f"Erreur lors de la demande d'accès aux fichiers : {e}")
+        sys.exit(1)
 
 # Function to analyze code with various tools
 def analyser_code(outils, file_path):
@@ -35,13 +51,12 @@ def generer_suggestions(results):
             suggestions.append("Utilisez flake8 pour corriger les erreurs de style.")
         if "pylint" in outil:
             suggestions.append("Utilisez pylint pour améliorer la qualité du code.")
-        if "blobtexte" in outil:
-            suggestions.append("Utilisez blobtexte pour analyser les structures de texte.")
+        if "textblob" in outil:
+            suggestions.append("Utilisez TextBlob pour analyser les structures de texte.")
     return list(set(suggestions))  # Remove duplicates
 
 # Function to apply corrections to the code
 def appliquer_corrections(code, results):
-    # Placeholder for actual correction logic
     corrected_code = code
     for outil, result in results.items():
         if "flake8" in outil:
@@ -50,25 +65,22 @@ def appliquer_corrections(code, results):
         if "pylint" in outil:
             # Apply pylint corrections
             pass
-        if "blobtexte" in outil:
-            # Apply blobtexte corrections
+        if "textblob" in outil:
+            # Apply TextBlob corrections
             pass
     return corrected_code
 
 def main():
     choix = input("Voulez-vous analyser les fichiers depuis un répertoire local ? (oui/non) : ").strip().lower()
     if choix == 'oui':
-        path = input("Veuillez entrer le chemin du répertoire à analyser : ")
-        if not os.path.exists(path):
-            logging.error(f"Le chemin spécifié n'existe pas : {path}")
-            sys.exit(1)
+        path = demander_acces_aux_fichiers()
         for root, dirs, files in os.walk(path):
             for filename in files:
                 if filename.endswith('.py'):
                     file_path = os.path.join(root, filename)
                     with open(file_path, 'r', encoding='utf-8') as file:
                         code = file.read()
-                    outils = [["flake8"], ["pylint"], ["blobtexte"]]
+                    outils = [["flake8"], ["pylint"], ["textblob"]]
                     results = analyser_code(outils, file_path)
                     suggestions = generer_suggestions(results)
                     corrected_code = appliquer_corrections(code, results)
@@ -88,7 +100,7 @@ def main():
                 logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
                 sys.exit(1)
             code = response.text
-            outils = [["flake8"], ["pylint"], ["blobtexte"]]
+            outils = [["flake8"], ["pylint"], ["textblob"]]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
                 temp_file.write(code)
                 temp_file_path = temp_file.name
