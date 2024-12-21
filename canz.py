@@ -1,7 +1,3 @@
-"""
-Module pour analyser le code source avec divers outils.
-"""
-
 import logging
 import os
 import subprocess
