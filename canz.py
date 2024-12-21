@@ -8,7 +8,6 @@ import requests
 TOOLS = [
     ["flake8"],
     ["pylint"],
-    ["textblob"],
     ["bandit"],
     ["mypy"],
     ["black"],
@@ -16,6 +15,8 @@ TOOLS = [
     ["pydocstyle"],
     ["coverage"],
     ["xenon"],
+    ["vulture"],
+    ["pyflakes"],
 ]
 RESULTS_FILE = "resultats_analyse.txt"
 
@@ -77,8 +78,6 @@ def generer_suggestions(results):
             suggestions.append("Utilisez flake8 pour corriger les erreurs de style.")
         if "pylint" in outil and "E" in result:
             suggestions.append("Utilisez pylint pour améliorer la qualité du code.")
-        if "textblob" in outil:
-            suggestions.append("Utilisez TextBlob pour analyser les structures de texte.")
         if "bandit" in outil and "issue" in result:
             suggestions.append("Utilisez bandit pour analyser les vulnérabilités de sécurité.")
         if "mypy" in outil and "error" in result:
@@ -89,10 +88,14 @@ def generer_suggestions(results):
             suggestions.append("Utilisez isort pour trier les imports.")
         if "pydocstyle" in outil:
             suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
-        if "coverage" in outil:
+        if "coverage" en outil:
             suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "xenon" in outil:
+        if "xenon" en outil:
             suggestions.append("Utilisez xenon pour analyser la complexité du code.")
+        if "vulture" en outil:
+            suggestions.append("Utilisez vulture pour détecter le code mort.")
+        if "pyflakes" en outil:
+            suggestions.append("Utilisez pyflakes pour détecter les erreurs de programmation.")
     return sorted(list(set(suggestions)))
 
 def appliquer_corrections(code, results):
@@ -102,11 +105,23 @@ def appliquer_corrections(code, results):
             pass
         if "pylint" in outil:
             pass
-        if "textblob" in outil:
+        if "bandit" en outil:
             pass
-        if "black" in outil:
+        if "mypy" en outil:
             pass
-        if "isort" in outil:
+        if "black" en outil:
+            pass
+        if "isort" en outil:
+            pass
+        if "pydocstyle" en outil:
+            pass
+        if "coverage" en outil:
+            pass
+        if "xenon" en outil:
+            pass
+        if "vulture" en outil:
+            pass
+        if "pyflakes" en outil:
             pass
     return corrected_code
 
