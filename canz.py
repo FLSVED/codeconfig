@@ -4,7 +4,16 @@ import subprocess
 import sys
 import tempfile
 import requests
+import asyncio
+import argparse
+from typing import List
 
+# Configuration du logging avec différents niveaux
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Liste des outils d'analyse
 TOOLS = [
     ["flake8"],
     ["pylint"],
@@ -22,60 +31,43 @@ TOOLS = [
     ["safety"],
     ["prospector"],
     ["trufflehog"],
+    ["radon", "cc", "-a"],  # Pour analyser la complexité cyclomatique
 ]
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+class ToolNotFoundError(Exception):
+    """Exception levée lorsque l'outil n'est pas trouvé."""
+    pass
 
-def demander_acces_aux_fichiers():
-    try:
-        path = input("Veuillez entrer le chemin du répertoire à analyser : ").strip()
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Le chemin spécifié n'existe pas : {path}")
-        return path
-    except FileNotFoundError as e:
-        logging.error("Erreur lors de la demande d'accès aux fichiers : %s", e)
-        sys.exit(1)
-    except Exception as e:
-        logging.error("Erreur inattendue : %s", e)
-        sys.exit(1)
+class AnalysisError(Exception):
+    """Exception levée en cas d'erreur d'analyse."""
+    pass
 
-def verifier_outil(outil):
+def verifier_outil(outil: str) -> bool:
+    """Vérifie si un outil est installé."""
     try:
         subprocess.run([outil, '--version'], capture_output=True, text=True, check=True)
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+    except FileNotFoundError:
+        logging.error(f"L'outil {outil} n'est pas installé.")
+        raise ToolNotFoundError(f"{outil} n'est pas trouvé.")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Erreur lors de l'exécution de {outil} : {e}")
+        raise AnalysisError(f"Échec de l'exécution de {outil}.")
 
-def verifier_tous_les_outils(outils):
-    for outil in outils:
-        if not verifier_outil(outil[0]):
-            logging.error(f"L'outil {outil[0]} n'est pas installé.")
-            sys.exit(1)
-
-def analyser_code(outils, file_path):
+async def analyser_code(outils: List[List[str]], file_path: str) -> dict:
+    """Analyse le code avec les outils spécifiés."""
     results = {}
     for outil in outils:
-        if verifier_outil(outil[0]):
-            try:
+        try:
+            if verifier_outil(outil[0]):
                 result = subprocess.run(outil + [file_path], capture_output=True, text=True, check=True)
                 results[outil[0]] = result.stdout
-            except subprocess.CalledProcessError as e:
-                results[outil[0]] = e.output
-        else:
-            results[outil[0]] = f"{outil[0]} n'est pas installé ou accessible."
+        except (ToolNotFoundError, AnalysisError) as e:
+            results[outil[0]] = str(e)
     return results
 
-def is_valid_url(url):
-    try:
-        response = requests.head(url, timeout=10)
-        return response.status_code == 200
-    except requests.RequestException as e:
-        logging.error("Erreur lors de la vérification de l'URL : %s", e)
-        return False
-
-def generer_suggestions(results):
+def generer_suggestions(results: dict) -> List[str]:
+    """Génère des suggestions de correction basées sur les résultats des outils."""
     suggestions = []
     for outil, result in results.items():
         if "flake8" in outil and "E" in result:
@@ -85,80 +77,37 @@ def generer_suggestions(results):
         if "bandit" in outil and "issue" in result:
             suggestions.append("Utilisez bandit pour analyser les vulnérabilités de sécurité.")
         if "mypy" in outil and "error" in result:
-            suggestions.append("Utilisez mypy pour vérifier les annotations de type.")
-        if "black" in outil:
-            suggestions.append("Utilisez black pour formater le code.")
-        if "isort" in outil:
-            suggestions.append("Utilisez isort pour trier les imports.")
-        if "pydocstyle" in outil:
-            suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
-        if "coverage" in outil:
-            suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "xenon" in outil:
-            suggestions.append("Utilisez xenon pour analyser la complexité du code.")
-        if "vulture" in outil:
-            suggestions.append("Utilisez vulture pour détecter le code mort.")
-        if "pyflakes" in outil:
-            suggestions.append("Utilisez pyflakes pour détecter les erreurs de programmation.")
-        if "pyright" in outil:
-            suggestions.append("Utilisez Pyright pour vérifier les types statiques.")
-        if "pyre" in outil:
-            suggestions.append("Utilisez Pyre pour vérifier les types statiques.")
-        if "safety" in outil:
-            suggestions.append("Utilisez Safety pour vérifier les vulnérabilités des dépendances.")
-        if "prospector" in outil:
-            suggestions.append("Utilisez Prospector pour une analyse de code complète.")
-        if "trufflehog" in outil:
-            suggestions.append("Utilisez TruffleHog pour détecter les secrets dans le code.")
+            suggestions.append("Utilisez mypy pour vérifier et corriger les annotations de type.")
+        if "safety" in outil and "vulnerability" in result:
+            suggestions.append("Utilisez safety pour mettre à jour les dépendances.")
+        if "radon" in outil and "Complexity" in result:
+            suggestions.append("Utilisez radon pour réduire la complexité cyclomatique.")
     return sorted(list(set(suggestions)))
 
-def handle_syntax_errors(results):
+def handle_syntax_errors(results: dict) -> bool:
+    """Vérifie s'il y a des erreurs de syntaxe dans le code."""
     for outil, result in results.items():
         if "SyntaxError" in result or "invalid syntax" in result:
             return True
     return False
 
-def appliquer_corrections(code, results):
+def appliquer_corrections(code: str, results: dict, file_path: str) -> str:
+    """Applique des corrections automatiques au code."""
     if handle_syntax_errors(results):
-        logging.error("Le code contient des erreurs de syntaxe. Veuillez corriger les erreurs de syntaxe avant de continuer.")
+        logging.error("Le code contient des erreurs de syntaxe.")
         return code
     corrected_code = code
-    for outil, result in results.items():
-        if "flake8" in outil:
-            pass
-        elif "pylint" in outil:
-            pass
-        elif "bandit" in outil:
-            pass
-        elif "mypy" in outil:
-            pass
-        elif "black" in outil:
-            pass
-        elif "isort" in outil:
-            pass
-        elif "pydocstyle" in outil:
-            pass
-        elif "coverage" in outil:
-            pass
-        elif "xenon" in outil:
-            pass
-        elif "vulture" in outil:
-            pass
-        elif "pyflakes" in outil:
-            pass
-        elif "pyright" in outil:
-            pass
-        elif "pyre" in outil:
-            pass
-        elif "safety" in outil:
-            pass
-        elif "prospector" in outil:
-            pass
-        elif "trufflehog" in outil:
-            pass
+    for outil in ["black", "isort"]:
+        if outil in results:
+            try:
+                logging.info(f"Application de {outil} pour formater le code.")
+                subprocess.run([outil, file_path], check=True)
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Erreur lors de l'application de {outil} : {e}")
     return corrected_code
 
-def ecrire_resultats_dans_fichier(filepath, results, suggestions):
+def ecrire_resultats_dans_fichier(filepath: str, results: dict, suggestions: List[str]):
+    """Écrit les résultats de l'analyse et les suggestions dans un fichier."""
     try:
         with open(filepath, 'w', encoding='utf-8') as file:
             for outil, result in results.items():
@@ -170,7 +119,8 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
         logging.error("Erreur lors de l'écriture des résultats dans le fichier %s : %s", filepath, e)
         raise
 
-def ecrire_code_dans_fichier(filepath, code):
+def ecrire_code_dans_fichier(filepath: str, code: str):
+    """Écrit le code dans un fichier."""
     try:
         with open(filepath, 'w', encoding='utf-8') as file:
             file.write(code)
@@ -178,27 +128,17 @@ def ecrire_code_dans_fichier(filepath, code):
         logging.error("Erreur lors de l'écriture du code dans le fichier %s : %s", filepath, e)
         raise
 
-def analyser_fichier_local(path):
-    for root, dirs, files in os.walk(path):
-        for filename in files:
-            if filename.endswith('.py'):
-                file_path = os.path.join(root, filename)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    code = file.read()
-                results = analyser_code(TOOLS, file_path)
-                suggestions = generer_suggestions(results)
-                corrected_code = appliquer_corrections(code, results)
-                print(f"Résultats pour {file_path} : {results}")
-                print(f"Suggestions : {suggestions}")
-                if corrected_code != code:
-                    with open(file_path, 'w', encoding='utf-8') as file:
-                        file.write(corrected_code)
-                for outil, result in results.items():
-                    if result:
-                        ecrire_resultats_dans_fichier(f"{outil}_resultats.txt", {outil: result}, suggestions)
-                ecrire_code_dans_fichier("code_complet.txt", code)
+def is_valid_url(url: str) -> bool:
+    """Vérifie si une URL est valide."""
+    try:
+        response = requests.head(url, timeout=10)
+        return response.status_code == 200
+    except requests.RequestException as e:
+        logging.error("Erreur lors de la vérification de l'URL : %s", e)
+        return False
 
-def analyser_fichier_url(url):
+async def analyser_fichier_url(url: str, outils: List[List[str]]):
+    """Analyse un fichier Python provenant d'une URL."""
     if not is_valid_url(url):
         logging.error("URL invalide : %s", url)
         sys.exit(1)
@@ -213,37 +153,57 @@ def analyser_fichier_url(url):
         temp_file.write(code)
         temp_file_path = temp_file.name
     try:
-        results = analyser_code(TOOLS, temp_file_path)
+        results = await analyser_code(outils, temp_file_path)
         suggestions = generer_suggestions(results)
-        corrected_code = appliquer_corrections(code, results)
+        corrected_code = appliquer_corrections(code, results, temp_file_path)
         print(f"Résultats pour {url} : {results}")
         print(f"Suggestions : {suggestions}")
         if corrected_code != code:
             with open(temp_file_path, 'w', encoding='utf-8') as file:
                 file.write(corrected_code)
-        for outil, result in results.items():
-            if result:
-                ecrire_resultats_dans_fichier(f"{outil}_resultats.txt", {outil: result}, suggestions)
+        ecrire_resultats_dans_fichier(f"resultats_{os.path.basename(url)}.txt", results, suggestions)
         ecrire_code_dans_fichier("code_complet.txt", code)
     finally:
         os.remove(temp_file_path)
 
-def main():
-    choix = input("Voulez-vous analyser les fichiers depuis un répertoire local ? (oui/non) : ").strip().lower()
-    if choix == 'oui':
-        path = demander_acces_aux_fichiers()
-        analyser_fichier_local(path)
-    elif choix == 'non':
-        choix = input("Voulez-vous analyser les fichiers depuis une URL ? (oui/non) : ").strip().lower()
-        if choix == 'oui':
-            url = input("Veuillez entrer l'URL du fichier à analyser : ").strip()
-            analyser_fichier_url(url)
-        else:
-            logging.info("Aucune analyse effectuée.")
-            sys.exit(0)
+async def analyser_fichier_local(path: str, outils: List[List[str]]):
+    """Analyse les fichiers Python dans un répertoire local."""
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            if filename.endswith('.py'):
+                file_path = os.path.join(root, filename)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    code = file.read()
+                results = await analyser_code(outils, file_path)
+                suggestions = generer_suggestions(results)
+                corrected_code = appliquer_corrections(code, results, file_path)
+                print(f"Résultats pour {file_path} : {results}")
+                print(f"Suggestions : {suggestions}")
+                if corrected_code != code:
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.write(corrected_code)
+                ecrire_resultats_dans_fichier(f"resultats_{filename}.txt", results, suggestions)
+                ecrire_code_dans_fichier("code_complet.txt", code)
+
+def parse_arguments():
+    """Parse les arguments de la ligne de commande."""
+    parser = argparse.ArgumentParser(description="Analyseur de code Python avec divers outils.")
+    parser.add_argument('--local', type=str, help='Chemin du répertoire local à analyser.')
+    parser.add_argument('--url', type=str, help='URL du fichier à analyser.')
+    return parser.parse_args()
+
+async def main():
+    """Point d'entrée principal du programme."""
+    args = parse_arguments()
+    outils_a_utiliser = TOOLS  # Ici, pour simplifier, on utilise tous les outils
+    if args.local:
+        await analyser_fichier_local(args.local, outils_a_utiliser)
+    elif args.url:
+        await analyser_fichier_url(args.url, outils_a_utiliser)
     else:
-        logging.error("Choix invalide. Veuillez répondre par 'oui' ou 'non'.")
+        logging.error("Veuillez spécifier un répertoire local ou une URL pour l'analyse.")
         sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
+```
