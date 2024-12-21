@@ -85,13 +85,13 @@ def generer_suggestions(results):
             suggestions.append("Utilisez mypy pour vérifier les annotations de type.")
         if "black" in outil:
             suggestions.append("Utilisez black pour formater le code.")
-        if "isort" en outil:
+        if "isort" in outil:
             suggestions.append("Utilisez isort pour trier les imports.")
-        if "pydocstyle" en outil:
+        if "pydocstyle" in outil:
             suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
-        if "coverage" en outil:
+        if "coverage" in outil:
             suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "xenon" en outil:
+        if "xenon" in outil:
             suggestions.append("Utilisez xenon pour analyser la complexité du code.")
     return sorted(list(set(suggestions)))
 
@@ -100,13 +100,13 @@ def appliquer_corrections(code, results):
     for outil, result in results.items():
         if "flake8" in outil:
             pass
-        if "pylint" en outil:
+        if "pylint" in outil:
             pass
-        if "textblob" en outil:
+        if "textblob" in outil:
             pass
-        if "black" en outil:
+        if "black" in outil:
             pass
-        if "isort" en outil:
+        if "isort" in outil:
             pass
     return corrected_code
 
