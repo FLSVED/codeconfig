@@ -120,33 +120,33 @@ def appliquer_corrections(code, results):
             pass
         if "pylint" in outil:
             pass
-        if "bandit" en outil:
+        if "bandit" in outil:
             pass
-        if "mypy" en outil:
+        if "mypy" in outil:
             pass
-        if "black" en outil:
+        if "black" in outil:
             pass
-        if "isort" en outil:
+        if "isort" in outil:
             pass
-        if "pydocstyle" en outil:
+        if "pydocstyle" in outil:
             pass
-        if "coverage" en outil:
+        if "coverage" in outil:
             pass
-        if "xenon" en outil:
+        if "xenon" in outil:
             pass
-        if "vulture" en outil:
+        if "vulture" in outil:
             pass
-        if "pyflakes" en outil:
+        if "pyflakes" in outil:
             pass
-        if "pyright" en outil:
+        if "pyright" in outil:
             pass
-        if "pyre" en outil:
+        if "pyre" in outil:
             pass
-        if "safety" en outil:
+        if "safety" in outil:
             pass
-        if "prospector" en outil:
+        if "prospector" in outil:
             pass
-        if "trufflehog" en outil:
+        if "trufflehog" in outil:
             pass
     return corrected_code
 
