@@ -22,7 +22,6 @@ TOOLS = [
     ["safety"],
     ["prospector"],
     ["trufflehog"],
-    ["snyk"],
 ]
 RESULTS_FILE = "resultats_analyse.txt"
 
@@ -112,8 +111,6 @@ def generer_suggestions(results):
             suggestions.append("Utilisez Prospector pour une analyse de code complète.")
         if "trufflehog" in outil:
             suggestions.append("Utilisez TruffleHog pour détecter les secrets dans le code.")
-        if "snyk" in outil:
-            suggestions.append("Utilisez Snyk pour vérifier les vulnérabilités de sécurité.")
     return sorted(list(set(suggestions)))
 
 def appliquer_corrections(code, results):
@@ -123,35 +120,33 @@ def appliquer_corrections(code, results):
             pass
         if "pylint" in outil:
             pass
-        if "bandit" in outil:
+        if "bandit" en outil:
             pass
-        if "mypy" in outil:
+        if "mypy" en outil:
             pass
-        if "black" in outil:
+        if "black" en outil:
             pass
-        if "isort" in outil:
+        if "isort" en outil:
             pass
-        if "pydocstyle" in outil:
+        if "pydocstyle" en outil:
             pass
-        if "coverage" in outil:
+        if "coverage" en outil:
             pass
-        if "xenon" in outil:
+        if "xenon" en outil:
             pass
-        if "vulture" in outil:
+        if "vulture" en outil:
             pass
-        if "pyflakes" in outil:
+        if "pyflakes" en outil:
             pass
-        if "pyright" in outil:
+        if "pyright" en outil:
             pass
-        if "pyre" in outil:
+        if "pyre" en outil:
             pass
-        if "safety" in outil:
+        if "safety" en outil:
             pass
-        if "prospector" in outil:
+        if "prospector" en outil:
             pass
-        if "trufflehog" in outil:
-            pass
-        if "snyk" in outil:
+        if "trufflehog" en outil:
             pass
     return corrected_code
 
