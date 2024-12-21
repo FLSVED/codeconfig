@@ -15,6 +15,7 @@ resultats_analyse = {}
 
 # Function to request access to local files
 def demander_acces_aux_fichiers():
+    """Request access to local files from the user."""
     try:
         path = input("Veuillez entrer le chemin du répertoire à analyser : ")
         if not os.path.exists(path):
@@ -26,6 +27,7 @@ def demander_acces_aux_fichiers():
 
 # Function to check if a tool is installed
 def verifier_outil(outil):
+    """Check if a tool is installed."""
     try:
         subprocess.run([outil, '--version'], capture_output=True, text=True, check=True)
         return True
@@ -34,6 +36,7 @@ def verifier_outil(outil):
 
 # Function to analyze code with various tools
 def analyser_code(outils, file_path):
+    """Analyze the code using a list of tools."""
     results = {}
     for outil in outils:
         if verifier_outil(outil[0]):
@@ -48,6 +51,7 @@ def analyser_code(outils, file_path):
 
 # Function to check if a URL is valid
 def is_valid_url(url):
+    """Check if a URL is valid."""
     try:
         response = requests.head(url)
         return response.status_code == 200
@@ -56,6 +60,7 @@ def is_valid_url(url):
 
 # Function to generate suggestions based on analysis results
 def generer_suggestions(results):
+    """Generate suggestions based on the analysis results."""
     suggestions = []
     for outil, result in results.items():
         if "flake8" in outil:
@@ -82,6 +87,7 @@ def generer_suggestions(results):
 
 # Function to apply corrections to the code
 def appliquer_corrections(code, results):
+    """Apply corrections to the code based on the analysis results."""
     corrected_code = code
     for outil, result in results.items():
         if "flake8" in outil:
@@ -103,6 +109,7 @@ def appliquer_corrections(code, results):
 
 # Function to write results to a file
 def ecrire_resultats_dans_fichier(filepath, results, suggestions):
+    """Write analysis results and suggestions to a file."""
     try:
         with open(filepath, 'w', encoding='utf-8') as file:
             for outil, result in results.items():
@@ -115,6 +122,7 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
         raise
 
 def main():
+    """Main function to execute the code analysis."""
     choix = input("Voulez-vous analyser les fichiers depuis un répertoire local ? (oui/non) : ").strip().lower()
     if choix == 'oui':
         path = demander_acces_aux_fichiers()
