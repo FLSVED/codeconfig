@@ -2,7 +2,6 @@ import os
 import subprocess
 import tempfile
 import requests
-from textblob import TextBlob
 import logging
 import sys
 
