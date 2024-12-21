@@ -3,15 +3,11 @@ import subprocess
 import tempfile
 import requests
 from textblob import TextBlob
-from urllib.parse import urlparse
 import logging
 import sys
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Initialize resultats_analyse as an empty dictionary
-resultats_analyse = {}
 
 # Function to request access to local files
 def demander_acces_aux_fichiers():
@@ -51,7 +47,8 @@ def is_valid_url(url):
     try:
         response = requests.head(url)
         return response.status_code == 200
-    except requests.RequestException:
+    except requests.RequestException as e:
+        logging.error(f"Erreur lors de la vérification de l'URL : {e}")
         return False
 
 # Function to generate suggestions based on analysis results
@@ -114,6 +111,7 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
         logging.error(f"Erreur lors de l'écriture des résultats dans le fichier {filepath} : {e}")
         raise
 
+# Function to analyze local files
 def analyser_fichier_local(path):
     for root, dirs, files in os.walk(path):
         for filename in files:
@@ -127,10 +125,12 @@ def analyser_fichier_local(path):
                 corrected_code = appliquer_corrections(code, results)
                 print(f"Résultats pour {file_path} : {results}")
                 print(f"Suggestions : {suggestions}")
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write(corrected_code)
+                if corrected_code != code:
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.write(corrected_code)
                 ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
 
+# Function to analyze files from a URL
 def analyser_fichier_url(url):
     if not is_valid_url(url):
         logging.error(f"URL invalide : {url}")
@@ -150,8 +150,9 @@ def analyser_fichier_url(url):
         corrected_code = appliquer_corrections(code, results)
         print(f"Résultats pour {url} : {results}")
         print(f"Suggestions : {suggestions}")
-        with open(temp_file_path, 'w', encoding='utf-8') as file:
-            file.write(corrected_code)
+        if corrected_code != code:
+            with open(temp_file_path, 'w', encoding='utf-8') as file:
+                file.write(corrected_code)
         ecrire_resultats_dans_fichier("resultats_analyse.txt", results, suggestions)
     finally:
         os.remove(temp_file_path)
