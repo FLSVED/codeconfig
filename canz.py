@@ -72,7 +72,7 @@ def generer_suggestions(problemes):
         suggestions.append("Supprimez les importations qui ne sont pas utilisées.")
     if 'sonarqube' in problemes:
         suggestions.append("Consultez les résultats de SonarQube pour des suggestions détaillées.")
-    if 'Outil introuvable' en problemes:
+    if 'Outil introuvable' in problemes:
         suggestions.append("Vérifiez que tous les outils d'analyse sont installés et accessibles.")
     return suggestions
 
