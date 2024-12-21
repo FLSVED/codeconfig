@@ -17,6 +17,12 @@ TOOLS = [
     ["xenon"],
     ["vulture"],
     ["pyflakes"],
+    ["pyright"],
+    ["pyre"],
+    ["safety"],
+    ["prospector"],
+    ["trufflehog"],
+    ["snyk"],
 ]
 RESULTS_FILE = "resultats_analyse.txt"
 
@@ -88,14 +94,26 @@ def generer_suggestions(results):
             suggestions.append("Utilisez isort pour trier les imports.")
         if "pydocstyle" in outil:
             suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
-        if "coverage" en outil:
+        if "coverage" in outil:
             suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "xenon" en outil:
+        if "xenon" in outil:
             suggestions.append("Utilisez xenon pour analyser la complexité du code.")
-        if "vulture" en outil:
+        if "vulture" in outil:
             suggestions.append("Utilisez vulture pour détecter le code mort.")
-        if "pyflakes" en outil:
+        if "pyflakes" in outil:
             suggestions.append("Utilisez pyflakes pour détecter les erreurs de programmation.")
+        if "pyright" in outil:
+            suggestions.append("Utilisez Pyright pour vérifier les types statiques.")
+        if "pyre" in outil:
+            suggestions.append("Utilisez Pyre pour vérifier les types statiques.")
+        if "safety" in outil:
+            suggestions.append("Utilisez Safety pour vérifier les vulnérabilités des dépendances.")
+        if "prospector" in outil:
+            suggestions.append("Utilisez Prospector pour une analyse de code complète.")
+        if "trufflehog" in outil:
+            suggestions.append("Utilisez TruffleHog pour détecter les secrets dans le code.")
+        if "snyk" in outil:
+            suggestions.append("Utilisez Snyk pour vérifier les vulnérabilités de sécurité.")
     return sorted(list(set(suggestions)))
 
 def appliquer_corrections(code, results):
@@ -105,23 +123,35 @@ def appliquer_corrections(code, results):
             pass
         if "pylint" in outil:
             pass
-        if "bandit" en outil:
+        if "bandit" in outil:
             pass
-        if "mypy" en outil:
+        if "mypy" in outil:
             pass
-        if "black" en outil:
+        if "black" in outil:
             pass
-        if "isort" en outil:
+        if "isort" in outil:
             pass
-        if "pydocstyle" en outil:
+        if "pydocstyle" in outil:
             pass
-        if "coverage" en outil:
+        if "coverage" in outil:
             pass
-        if "xenon" en outil:
+        if "xenon" in outil:
             pass
-        if "vulture" en outil:
+        if "vulture" in outil:
             pass
-        if "pyflakes" en outil:
+        if "pyflakes" in outil:
+            pass
+        if "pyright" in outil:
+            pass
+        if "pyre" in outil:
+            pass
+        if "safety" in outil:
+            pass
+        if "prospector" in outil:
+            pass
+        if "trufflehog" in outil:
+            pass
+        if "snyk" in outil:
             pass
     return corrected_code
 
