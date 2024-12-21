@@ -64,6 +64,20 @@ def generer_suggestions(results):
             suggestions.append("Utilisez pylint pour améliorer la qualité du code.")
         if "textblob" in outil:
             suggestions.append("Utilisez TextBlob pour analyser les structures de texte.")
+        if "bandit" in outil:
+            suggestions.append("Utilisez bandit pour analyser les vulnérabilités de sécurité.")
+        if "mypy" in outil:
+            suggestions.append("Utilisez mypy pour vérifier les annotations de type.")
+        if "black" in outil:
+            suggestions.append("Utilisez black pour formater le code.")
+        if "isort" in outil:
+            suggestions.append("Utilisez isort pour trier les imports.")
+        if "pydocstyle" in outil:
+            suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
+        if "coverage" in outil:
+            suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
+        if "radon" in outil:
+            suggestions.append("Utilisez radon pour analyser la complexité du code.")
     return list(set(suggestions))  # Remove duplicates
 
 # Function to apply corrections to the code
@@ -78,6 +92,12 @@ def appliquer_corrections(code, results):
             pass
         if "textblob" in outil:
             # Apply TextBlob corrections
+            pass
+        if "black" in outil:
+            # Apply black corrections
+            pass
+        if "isort" in outil:
+            # Apply isort corrections
             pass
     return corrected_code
 
@@ -104,7 +124,7 @@ def main():
                     file_path = os.path.join(root, filename)
                     with open(file_path, 'r', encoding='utf-8') as file:
                         code = file.read()
-                    outils = [["flake8"], ["pylint"], ["textblob"]]
+                    outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["radon"]]
                     results = analyser_code(outils, file_path)
                     suggestions = generer_suggestions(results)
                     corrected_code = appliquer_corrections(code, results)
@@ -125,7 +145,7 @@ def main():
                 logging.error(f"Erreur lors du téléchargement du fichier : {response.status_code}")
                 sys.exit(1)
             code = response.text
-            outils = [["flake8"], ["pylint"], ["textblob"]]
+            outils = [["flake8"], ["pylint"], ["textblob"], ["bandit"], ["mypy"], ["black"], ["isort"], ["pydocstyle"], ["coverage"], ["radon"]]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.py', mode='w', encoding='utf-8') as temp_file:
                 temp_file.write(code)
                 temp_file_path = temp_file.name
