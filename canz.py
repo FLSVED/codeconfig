@@ -3,10 +3,8 @@ import os
 import subprocess
 import sys
 import tempfile
-
 import requests
 
-# Constants
 TOOLS = [
     ["flake8"],
     ["pylint"],
@@ -21,19 +19,11 @@ TOOLS = [
 ]
 RESULTS_FILE = "resultats_analyse.txt"
 
-# Initialize logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
 def demander_acces_aux_fichiers():
-    """
-    Demande à l'utilisateur le chemin du répertoire à analyser.
-
-    Returns:
-        str: Le chemin du répertoire.
-    """
     try:
         path = input("Veuillez entrer le chemin du répertoire à analyser : ")
         if not os.path.exists(path):
@@ -46,35 +36,20 @@ def demander_acces_aux_fichiers():
         logging.error("Erreur inattendue : %s", e)
         sys.exit(1)
 
-
 def verifier_outil(outil):
-    """
-    Vérifie si un outil est installé.
-
-    Args:
-        outil (str): Le nom de l'outil à vérifier.
-
-    Returns:
-        bool: True si l'outil est installé, False sinon.
-    """
     try:
         subprocess.run([outil, '--version'], capture_output=True, text=True, check=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
+def verifier_tous_les_outils(outils):
+    for outil in outils:
+        if not verifier_outil(outil[0]):
+            logging.error(f"L'outil {outil[0]} n'est pas installé.")
+            sys.exit(1)
 
 def analyser_code(outils, file_path):
-    """
-    Analyse le code avec divers outils.
-
-    Args:
-        outils (list): Liste des outils à utiliser pour l'analyse.
-        file_path (str): Chemin du fichier à analyser.
-
-    Returns:
-        dict: Résultats de l'analyse pour chaque outil.
-    """
     results = {}
     for outil in outils:
         if verifier_outil(outil[0]):
@@ -87,17 +62,7 @@ def analyser_code(outils, file_path):
             results[outil[0]] = f"{outil[0]} n'est pas installé ou accessible."
     return results
 
-
 def is_valid_url(url):
-    """
-    Vérifie si une URL est valide.
-
-    Args:
-        url (str): L'URL à vérifier.
-
-    Returns:
-        bool: True si l'URL est valide, False sinon.
-    """
     try:
         response = requests.head(url, timeout=10)
         return response.status_code == 200
@@ -105,82 +70,47 @@ def is_valid_url(url):
         logging.error("Erreur lors de la vérification de l'URL : %s", e)
         return False
 
-
 def generer_suggestions(results):
-    """
-    Génère des suggestions basées sur les résultats de l'analyse.
-
-    Args:
-        results (dict): Résultats de l'analyse pour chaque outil.
-
-    Returns:
-        list: Liste des suggestions de correction.
-    """
     suggestions = []
     for outil, result in results.items():
-        if "flake8" in outil:
+        if "flake8" in outil and "E" in result:
             suggestions.append("Utilisez flake8 pour corriger les erreurs de style.")
-        if "pylint" in outil:
+        if "pylint" in outil and "E" in result:
             suggestions.append("Utilisez pylint pour améliorer la qualité du code.")
         if "textblob" in outil:
             suggestions.append("Utilisez TextBlob pour analyser les structures de texte.")
-        if "bandit" in outil:
+        if "bandit" in outil and "issue" in result:
             suggestions.append("Utilisez bandit pour analyser les vulnérabilités de sécurité.")
-        if "mypy" in outil:
+        if "mypy" in outil and "error" in result:
             suggestions.append("Utilisez mypy pour vérifier les annotations de type.")
         if "black" in outil:
             suggestions.append("Utilisez black pour formater le code.")
-        if "isort" in outil:
+        if "isort" en outil:
             suggestions.append("Utilisez isort pour trier les imports.")
-        if "pydocstyle" in outil:
+        if "pydocstyle" en outil:
             suggestions.append("Utilisez pydocstyle pour vérifier les docstrings.")
-        if "coverage" in outil:
+        if "coverage" en outil:
             suggestions.append("Utilisez coverage pour mesurer la couverture des tests.")
-        if "xenon" in outil:
+        if "xenon" en outil:
             suggestions.append("Utilisez xenon pour analyser la complexité du code.")
-    return sorted(list(set(suggestions)))  # Remove duplicates and sort
-
+    return sorted(list(set(suggestions)))
 
 def appliquer_corrections(code, results):
-    """
-    Applique des corrections au code basé sur les résultats de l'analyse.
-
-    Args:
-        code (str): Le code source à corriger.
-        results (dict): Résultats de l'analyse pour chaque outil.
-
-    Returns:
-        str: Le code corrigé.
-    """
     corrected_code = code
     for outil, result in results.items():
         if "flake8" in outil:
-            # Apply flake8 corrections
             pass
-        if "pylint" in outil:
-            # Apply pylint corrections
+        if "pylint" en outil:
             pass
-        if "textblob" in outil:
-            # Apply TextBlob corrections
+        if "textblob" en outil:
             pass
-        if "black" in outil:
-            # Apply black corrections
+        if "black" en outil:
             pass
-        if "isort" in outil:
-            # Apply isort corrections
+        if "isort" en outil:
             pass
     return corrected_code
 
-
 def ecrire_resultats_dans_fichier(filepath, results, suggestions):
-    """
-    Écrit les résultats de l'analyse et les suggestions dans un fichier.
-
-    Args:
-        filepath (str): Chemin du fichier où écrire les résultats.
-        results (dict): Résultats de l'analyse pour chaque outil.
-        suggestions (list): Liste des suggestions de correction.
-    """
     try:
         with open(filepath, 'w', encoding='utf-8') as file:
             for outil, result in results.items():
@@ -192,14 +122,7 @@ def ecrire_resultats_dans_fichier(filepath, results, suggestions):
         logging.error("Erreur lors de l'écriture des résultats dans le fichier %s : %s", filepath, e)
         raise
 
-
 def analyser_fichier_local(path):
-    """
-    Analyse les fichiers locaux dans le répertoire spécifié.
-
-    Args:
-        path (str): Chemin du répertoire à analyser.
-    """
     for root, dirs, files in os.walk(path):
         for filename in files:
             if filename.endswith('.py'):
@@ -216,14 +139,7 @@ def analyser_fichier_local(path):
                         file.write(corrected_code)
                 ecrire_resultats_dans_fichier(RESULTS_FILE, results, suggestions)
 
-
 def analyser_fichier_url(url):
-    """
-    Analyse un fichier à partir d'une URL.
-
-    Args:
-        url (str): L'URL du fichier à analyser.
-    """
     if not is_valid_url(url):
         logging.error("URL invalide : %s", url)
         sys.exit(1)
@@ -248,11 +164,7 @@ def analyser_fichier_url(url):
     finally:
         os.remove(temp_file_path)
 
-
 def main():
-    """
-    Point d'entrée principal du script.
-    """
     choix = input("Voulez-vous analyser les fichiers depuis un répertoire local ? (oui/non) : ").strip().lower()
     if choix == 'oui':
         path = demander_acces_aux_fichiers()
@@ -268,7 +180,6 @@ def main():
     else:
         logging.error("Choix invalide. Veuillez répondre par 'oui' ou 'non'.")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
